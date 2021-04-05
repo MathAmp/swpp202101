@@ -15,13 +15,14 @@ public:
     std::set<StringRef> unusedSet;
     std::queue<StringRef> blockQueue;
     std::map<StringRef, BasicBlock*> blockMap;
-    BasicBlock &entry = F.getEntryBlock();
-    blockQueue.push(entry.getName());
 
     for (BasicBlock &BB : F) {
       blockMap.insert(std::make_pair(BB.getName(), &BB));
       unusedSet.insert(BB.getName());
     }
+    
+    BasicBlock &entry = F.getEntryBlock();
+    blockQueue.push(entry.getName());
 
     while (!blockQueue.empty()) {
       StringRef &s = blockQueue.front();
@@ -48,20 +49,6 @@ public:
       outs() << s << "\n";
     }
 
-    /*
-    outs() << "Entry : " << F.getEntryBlock().getName() << "\n";
-    outs() << "Front : " << F.front().getName() << "\n\n";
-    for (BasicBlock &BB : F) {
-      outs() << "Basic Block :" << BB.getName() << "\n";
-      for (Instruction &I : BB) {
-        for (unsigned int i = 0; i < I.getNumOperands(); i++) {
-          Value *v = I.getOperand(i);
-          outs() << "\t" << v->getValueID() << "\n";
-        }
-        outs() << "\t" << (I.getOpcode() == Instruction::Ret) << "\n";
-      }
-    }
-    */
     return PreservedAnalyses::all();
   }
 };
