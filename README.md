@@ -1,7 +1,7 @@
 # M1522.002400 Principles and Practices of Software Development
 
 - Instructor: Prof. [Chung-Kil Hur](http://sf.snu.ac.kr/gil.hur)
-- TA: [Juneyoung Lee](http://sf.snu.ac.kr/juneyoung.lee/)(@aqjune), [Sung-Hwan Lee](http://sf.snu.ac.kr/sunghwan.lee/)(@Sung-HwanLee), Woosung Song(@lego0901)
+- TA: [Juneyoung Lee](http://sf.snu.ac.kr/juneyoung.lee/)(@aqjune), [Sung-Hwan Lee](http://sf.snu.ac.kr/sunghwan.lee/)(@Sung-HwanLee), [Seunghyeon Nam](https://sf.snu.ac.kr/seunghyeon.nam/)(@STRIKE-F), Woosung Song(@lego0901)
     + Email address: swpp@sf.snu.ac.kr. 
         * In the case of sending TA an email, specify sender's name and student ID.  
     + Place: Bldg 302 Rm 312-2 
@@ -12,6 +12,8 @@
 - Mar. 24: [issue 7](https://github.com/snu-sf-class/swpp202101/issues/7) has links to Alive2 that verify correctness/incorrectness of the equality-propagating transformations.
 
 ## Projects
+
+- Apr. 13: Please submit your team: [issue 19](https://github.com/snu-sf-class/swpp202101/issues/19)
 
 ## Assignments
 
@@ -27,3 +29,7 @@
 
 - Mar.29: Assignment 3 is announced. Deadline is Apr. 7, 11:59PM.
   See here: https://github.com/snu-sf-class/swpp202101/tree/master/practice/3.assn
+
+- Apr. 9: Assignment 4 is announced. Deadline is Apr. 18, 11:59PM.
+  See here: https://github.com/snu-sf-class/swpp202101/tree/master/practice/4.assn
+  For Z3 installation, package manager may not work. Please see [issue 15](https://github.com/snu-sf-class/swpp202101/issues/15).
