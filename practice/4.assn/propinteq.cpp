@@ -28,7 +28,7 @@ private:
     return s1;
   }
 
-  ChangeInfo createChangeInfo(bool isEqual, SmallVector<StringRef> vec, Value *v1, Value *v2) {
+  ChangeInfo createChangeInfo(bool isEqual, SmallVector<StringRef> &vec, Value *v1, Value *v2) {
     StringRef s1 = v1->getName();
     StringRef s2 = v2->getName();
     StringRef &s = precedeString(vec, s1, s2);
@@ -87,19 +87,25 @@ public:
       // replace variable
       BranchInst *brInst;
       Instruction *term = BB.getTerminator();
+      // if terminator exist and conditional branch instruction
       if (term && (brInst = dyn_cast<BranchInst>(term)) && 
           (brInst->getNumOperands() > 1) &&
           (equalMap.find(brInst->getOperand(0)->getName()) != equalMap.end())) {
         Value *cond = brInst->getOperand(0);
         ChangeInfo info = equalMap[cond->getName()];
-        unsigned idx = info.isEqual ? 0 : 1;
-        BasicBlock *next = term->getSuccessor(idx);
-        BasicBlockEdge BBE(&BB, next);
 
-        for (BasicBlock &basicBlock: F)
-          if (DT.dominates(BBE, &basicBlock))
-            for (Instruction &inst: basicBlock)
-              inst.replaceUsesOfWith(info.replacee, info.replacer);
+        // only icmp eq, replace
+        if (info.isEqual) {
+          unsigned idx = 0; 
+          BasicBlock *next = term->getSuccessor(idx);
+          BasicBlockEdge BBE(&BB, next);
+
+          // if block edge (block -> true condition block) is dominates, replace
+          for (BasicBlock &basicBlock: F)
+            if (DT.dominates(BBE, &basicBlock))
+              for (Instruction &inst: basicBlock)
+                inst.replaceUsesOfWith(info.replacee, info.replacer);
+        }
       }
     }
 
