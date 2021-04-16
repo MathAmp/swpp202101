@@ -99,7 +99,7 @@ public:
           (brInst->getNumOperands() > 1) &&
           (schemeMap.find(brInst->getOperand(0)->getName()) != schemeMap.end())) {
         Value *cond = brInst->getOperand(0);
-        ChangeScheme scheme = schemeMap[cond->getName()];
+        ChangeScheme scheme = schemeMap[cond->getName()]; // existence checked in recent if statement
 
         // only icmp eq, replace
         if (scheme.isEqual) {
@@ -118,8 +118,6 @@ public:
 
     return PreservedAnalyses::all();
   }
-
-
 };
 }
 
