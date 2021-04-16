@@ -10,17 +10,20 @@ namespace {
 class PropagateIntegerEquality : public PassInfoMixin<PropagateIntegerEquality> {
 
 private:
-  class ChangeInfo {
+  // Keep from value(replacee) and to value(replacer).
+  // For extensibility, keep "is the instruction 'eq' icmp?". False, then ne
+  class ChangeScheme {
     public:
       bool isEqual;
       Value *replacer;
       Value *replacee;
-      ChangeInfo() {}
-      ChangeInfo(bool _isEqual, Value *_replacer, Value *_replacee) 
+      ChangeScheme() {}
+      ChangeScheme(bool _isEqual, Value *_replacer, Value *_replacee) 
         : isEqual(_isEqual), replacer(_replacer), replacee(_replacee) {}  
 
   };
 
+  // Query preceded string
   StringRef &precedeString(SmallVector<StringRef> &vec, StringRef &s1, StringRef &s2) {
     for (StringRef &s: vec) {
       if ((s == s1) || (s == s2)) return s;
@@ -28,7 +31,8 @@ private:
     return s1;
   }
 
-  ChangeInfo createChangeInfo(bool isEqual, SmallVector<StringRef> &vec, Value *v1, Value *v2) {
+  // For value v1 and v2, select preceded string and make ChangeScheme
+  ChangeScheme createChangeScheme(bool isEqual, SmallVector<StringRef> &vec, Value *v1, Value *v2) {
     StringRef s1 = v1->getName();
     StringRef s2 = v2->getName();
 
@@ -37,14 +41,14 @@ private:
 
     Value *replacer = isFirst ? v1 : v2;
     Value *replacee = isFirst ? v2 : v1;
-    return ChangeInfo(isEqual, replacer, replacee);
+    return ChangeScheme(isEqual, replacer, replacee);
   }
 
 public:
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
     DominatorTree &DT = FAM.getResult<DominatorTreeAnalysis>(F);
     SmallVector<StringRef> symbols;
-    SmallDenseMap<StringRef, ChangeInfo> infoMap;
+    SmallDenseMap<StringRef, ChangeScheme> schemeMap;
 
     // push function arguments
     for (Argument &arg: F.args()) {
@@ -79,8 +83,8 @@ public:
             // for different operands name (if equal then no need to change)
             if (v1->getName() != v2->getName()) {
               bool isEqual = (pred == CmpInst::ICMP_EQ); // if not, it is neq becuase checked isEquality()
-              ChangeInfo info = createChangeInfo(isEqual, symbols, v1, v2);
-              infoMap.insert(make_pair(name, info));
+              ChangeScheme scheme = createChangeScheme(isEqual, symbols, v1, v2);
+              schemeMap.insert(make_pair(name, scheme));
             }
           }
         }
@@ -93,12 +97,12 @@ public:
       // if terminator exist and conditional branch instruction
       if (term && (brInst = dyn_cast<BranchInst>(term)) && 
           (brInst->getNumOperands() > 1) &&
-          (infoMap.find(brInst->getOperand(0)->getName()) != infoMap.end())) {
+          (schemeMap.find(brInst->getOperand(0)->getName()) != schemeMap.end())) {
         Value *cond = brInst->getOperand(0);
-        ChangeInfo info = infoMap[cond->getName()];
+        ChangeScheme scheme = schemeMap[cond->getName()];
 
         // only icmp eq, replace
-        if (info.isEqual) {
+        if (scheme.isEqual) {
           unsigned idx = 0; 
           BasicBlock *next = term->getSuccessor(idx);
           BasicBlockEdge BBE(&BB, next);
@@ -107,7 +111,7 @@ public:
           for (BasicBlock &basicBlock: F)
             if (DT.dominates(BBE, &basicBlock))
               for (Instruction &inst: basicBlock)
-                inst.replaceUsesOfWith(info.replacee, info.replacer);
+                inst.replaceUsesOfWith(scheme.replacee, scheme.replacer);
         }
       }
     }
