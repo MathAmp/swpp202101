@@ -10,10 +10,20 @@
 using namespace llvm;
 using namespace std;
 
-// This code save all domination tree for Edge(BranchInst->Next) to BasicBlock,
-// then
+// This code could be divided in 5 steps.
+// 1) Save all domination tree for Edge(BranchInst->Next) to BasicBlock.
+// 2)
 // Please keep consistent indent rule.
 // I suggest that use more LLVM offering codes like Function &F and casting
+// The counter example is as below
+/* define void @f(i32 %x, i32 %y) {
+ *   %cond1 = icmp eq i32 %x, %x
+ *   %cond2 = icmp eq i32 %y, %y
+ *   %cond = icmp eq i1 %cond1, %cond2
+ *   br i1 %cond, label %BB_equal, label %BB_not
+ * BB_equal:
+ *   %two1 = add i1 %cond1, %cond2 -> %cond2, %cond2 (depend on initial value)
+ *   ret void */
 
 
 namespace {
@@ -50,7 +60,7 @@ public:
       		}
 	}
 
-	//
+	// The variable name icmp is unintuitive. It is just a kind of instruction.
 	map<StringRef, pair<int, pair<Value * , Value * > > > icmp;
 	map<pair<BasicBlock * , BasicBlock * > , pair<Value *, Value *> > edge_pair;
 	for (auto &BB : F) {
@@ -67,6 +77,7 @@ public:
 					StringRef name2 = V2->getName();
 					int index1, type1, index2, type2;
 					// Next two for loop can be abstracted with "Search" method
+					// !! If name1(or 2) not in inst or arg, undefined behavior
 					for(int i = 0 ; i < arg.size() ; i++){
 						if(arg[i] == name1){
 							type1 = 1;
@@ -100,6 +111,7 @@ public:
 				break;
 	  		}
 	  		case Instruction::Br: {
+	  		    // Better to check dyn_cast<BranchInst>(&I)->isConditional()
 				if(I.getNumSuccessors() < 2)
 					break;
 				Value * V1 = I.getOperand(0);
@@ -108,6 +120,9 @@ public:
 					Value *from = (iter->second).second.first;
 					Value *to = (iter->second).second.second;
 					int typ = (iter->second).first;
+                    // All maps in edge_pair are identity (AB->AB)
+                    // It seems unnecessary for edge_pair to be
+                    // obligated to remember which block to change
 					if(typ == 32){
 						BasicBlock * next = I.getSuccessor(0);
 						edge_pair.insert(make_pair(make_pair(&BB, next), make_pair(from, to)));
@@ -119,6 +134,7 @@ public:
 				}
 				break;
 	  		}
+	  		// ! It does not push icmp inst. THIS MAY CAUSE COUNTER EXAMPLE. !
           		default: {
 				inst.push_back(I.getName());
                 		break;
