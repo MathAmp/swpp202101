@@ -92,7 +92,7 @@ public:
 					Value *V2 = I.getOperand(1);
 					StringRef name1 = V1->getName();
 					StringRef name2 = V2->getName();
-					int index1, type1, index2, type2;
+					int index1, type1, index2, type2; 
 					// Next two loops can be abstracted with a Search method.
 					// !If name1(or 2) not in inst or arg, undefined behavior!
 					for(int i = 0 ; i < arg.size() ; i++){
