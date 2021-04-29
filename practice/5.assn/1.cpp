@@ -156,11 +156,11 @@ public:
 			}
 		}
 	}
-
+    
 	// Saving domination relation only used here is unnecessary.
 	// This algorithm search 2|F| dom relations but you should search at least
 	// |F| ^ 2 dom relations for unordered basic blocks. THIS MAY CAUSE C.E. !
-      for (auto &BB : F) {
+	for (auto &BB : F) {
 		for(auto dom_edge : dom){
 			if(dom_edge.first == &BB){
 				if(edge_pair.find(dom_edge.second) != edge_pair.end()){
