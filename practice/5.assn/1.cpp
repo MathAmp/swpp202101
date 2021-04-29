@@ -114,7 +114,7 @@ public:
 							type2 = 2;
 							index2 = i;
 						}
-					}
+                    }
 					// Dividing the case of [arg] and [inst] gets complicated.
 					// [arg] always precedes [inst], so think [arg] + [inst].
 					if(type1 == type2){

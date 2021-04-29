@@ -72,7 +72,7 @@ public:
 							type2 = 2;
 							index2 = i;
 						}
-					}
+					}	
 					if(type1 == type2){
 						if(index1 < index2) icmp.insert(make_pair(I.getName() , make_pair(IC->getPredicate(),make_pair(V2, V1))));
 						else icmp.insert(make_pair(I.getName(), make_pair(IC->getPredicate(), make_pair(V1, V2))));
