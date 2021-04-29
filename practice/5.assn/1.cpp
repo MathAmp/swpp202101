@@ -50,7 +50,7 @@ using namespace std;
 namespace {
 class PropagateIntegerEquality : public PassInfoMixin<PropagateIntegerEquality> {
 public:
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {\
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
     // Do not use TOO many nested pairs. Wrap them in a struct or class.
 	set<pair< BasicBlock *, pair<BasicBlock * , BasicBlock * > > > dom;
 	set<pair<pair<BasicBlock *, BasicBlock * > , BasicBlock * > > inv_dom;
