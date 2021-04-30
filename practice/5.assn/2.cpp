@@ -8,6 +8,9 @@ using namespace llvm;
 using namespace std;
 using namespace llvm::PatternMatch;
 
+// A minor comment about formatting - space after comma in function arguments.
+/* the(compact,great,code, ever) -> the(compact, great, code, ever) */
+// Except that, Looks great to me.
 namespace {
 class PropagateIntegerEquality : public PassInfoMixin<PropagateIntegerEquality> {
 

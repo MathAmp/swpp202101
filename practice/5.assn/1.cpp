@@ -10,14 +10,9 @@
 using namespace llvm;
 using namespace std;
 
-// This code could be divided in 3 steps.
-// 1) Save all domination tree for Edge(BranchInst->Next) to BasicBlock.
-// 2) For all instruction, mark (1) what to replace (2) which part to replace
-// 3) For each blocks, do replace based on the information found in step 2)
 // Please keep consistent indent rule and exploit more abstraction methods.
 // There are unnecessary structures. I recommend using more llvm templates.
 // I explained in code what kinds of counterexamples each code can cause.
-// There is not enough space for counterexamples, so I attached them next.
 /* EXAMPLE 1 [ -> is result of given code, and => is true result ]
  * define void @f(i32 %x, i32 %y) {
  *   %cond1 = icmp eq i32 %x, %x
@@ -26,7 +21,7 @@ using namespace std;
  *   br i1 %cond, label %BB_equal, label %BB_not (omitted)
  * BB_equal:
  *   %two1 = add i1 %cond1, %cond2 -> %cond2, %cond2 (depend on initial value)
- *   ret void                      => %cond1, %cond1
+ *                                 => %cond1, %cond1
  * } */
 /* EXAMPLE 2 [ -> is result of given code, and => is true result ]
  * define i32 @f(i32 %a, i32 %b, i32 %c, i32 %d)
@@ -34,18 +29,27 @@ using namespace std;
  *   br i1 %cond, label %bb_true, label %bb_exit
  * bb_exit:
  *   ret i32 %a
- * bb_true3:
- *   call i32 @f(i32 %a, i32 %b, i32 %c, i32 %d)    -> @f(%a, %a, %b, %b)
- *   br label %bb_exit                              => @f(%a, %a, %a, %a)
  * bb_true2:
- *   call i32 @f(i32 %a, i32 %b, i32 %b, i32 %d)    -> @f(%a, %a, %b, %d)
- *                                                  => @f(%a, %a, %a, %d)
- *   %cond3 = icmp eq i32 %b, %d                    -=> %a, %d
- *   br i1 %cond3, label %bb_true3, label %bb_exit
+ *   call i32 @f(i32 %a, i32 %b, i32 %c, i32 %d)    -> @f(%a, %a, %b, %d)
+ *   br label %bb_exit                              => @f(%a, %a, %a, %d)
  * bb_true:
  *   call i32 @f(i32 %a, i32 %b, i32 %c, i32 %d)    -=> @f(%a, %a, %c, %d)
  *   %cond2 = icmp eq i32 %b, %c                    -=> %a, %c
  *   br i1 %cond2, label %bb_true2, label %bb_exit
+ * } */
+/* EXAMPLE 3 [ -> is result of given code, and => is true result ]
+ * define i32 @f(i32 %a, i32 %b) {
+ *   br label %bb_1
+ * bb_2:
+ *   %z2 = add i32 %a, %b
+ *   %cond1 = icmp eq i32 %z1, %z2
+ *   br i1 %cond1, label %bb_true, label %bb_exit (omitted)
+ * bb_1:
+ *   %z1 = add i32 %a, %b
+ *   br label %bb_2
+ * bb_true:
+ *   call i32 @f(i32 %z1, i32 %z2)                  -> @f(%z2, %z2)
+ *                                                  => @f(%z1, %z1)
  * } */
 namespace {
 class PropagateIntegerEquality : public PassInfoMixin<PropagateIntegerEquality> {
@@ -85,8 +89,7 @@ public:
 			switch (I.getOpcode()) {
 			case Instruction::ICmp:{
 				ICmpInst *IC = dyn_cast<ICmpInst>(&I);
-				// Predicate Num is hardcoded. Use llvm constant like next.
-				/* IC->getPredicate() == CmpInst::ICMP_EQ */
+				// Predicate Num is hardcoded. Please use CmpInst::ICMP_EQ
 				if(IC != NULL && (IC->getPredicate() == 32 /*|| IC->getPredicate() == 33*/)){
 					Value *V1 = I.getOperand(0);
 					Value *V2 = I.getOperand(1);
@@ -115,8 +118,6 @@ public:
 							index2 = i;
 						}
                     }
-					// Dividing the case of [arg] and [inst] gets complicated.
-					// [arg] always precedes [inst], so think [arg] + [inst].
 					if(type1 == type2){
 						if(index1 < index2) icmp.insert(make_pair(I.getName() , make_pair(IC->getPredicate(),make_pair(V2, V1))));
 						else icmp.insert(make_pair(I.getName(), make_pair(IC->getPredicate(), make_pair(V1, V2))));
@@ -128,7 +129,6 @@ public:
 				break;
 	  		}
 	  		case Instruction::Br: {
-	  		    // Better to check dyn_cast<BranchInst>(&I)->isConditional()
 				if(I.getNumSuccessors() < 2)
 					break;
 				Value * V1 = I.getOperand(0);
@@ -149,6 +149,7 @@ public:
 				break;
 	  		}
 	  		// ! It does not push icmp inst. THIS MAY CAUSE COUNTER EXAMPLE. !
+	  		// Making own domination tree is dangerous. THIS MAY CAUSE C.E. !
           		default: {
 				inst.push_back(I.getName());
                 		break;
@@ -158,8 +159,7 @@ public:
 	}
     
 	// Saving domination relation only used here is unnecessary.
-	// This algorithm search 2|F| dom relations but you should search at least
-	// |F| ^ 2 dom relations for unordered basic blocks. THIS MAY CAUSE C.E. !
+	// Searching |F|^2 dom relations does not work for unordered basic blocks.
 	for (auto &BB : F) {
 		for(auto dom_edge : dom){
 			if(dom_edge.first == &BB){
